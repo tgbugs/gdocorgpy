@@ -33,13 +33,13 @@ def get_oauth_service(readonly=True):
     return service
 
 class Drive:
-    def __init__(service=None):
+    def __init__(self, service=None):
         if service is None:
             service = get_oauth_service()
 
         self.service = service
 
-    def get_doc(doc_name, mimeType='text/plain'):
+    def get_doc(self, doc_name, mimeType='text/plain'):
         file_id = devconfig.secrets(doc_name)
         request = self.service.files().export_media(fileId=file_id,
                                                     mimeType=mimeType)
