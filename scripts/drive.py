@@ -13,6 +13,9 @@ spath = Path(devconfig.secrets_file).parent
 # derp
 # https://developers.google.com/drive/api/v3/integrate-open#open_and_convert_google_docs_in_your_app
 
+class UnhandledElementError(Exception):
+    """ Don't know what to do with this fellow ... """
+
 def get_oauth_service(store_file,
                       creds_file=None,  # if store_file exists don't need this
                       # if creds_file is None it will fail loudly before SCOPES
@@ -42,11 +45,13 @@ def get_docs_service(store_file):
                     discoveryServiceUrl=DISCOVERY_DOC)
     return service
 
+
 class Convert:
     mapping = (
         (('paragraph'),),
         (('paragraph'),),
     )
+
 
 class OrgDoc:
     def __init__(self, org):
@@ -163,10 +168,16 @@ class DocOrg:
         return out
 
     def paragraph_element(self, element):
-        types = 'textRun', 'inlineObjectElement'
+        types = 'textRun', 'inlineObjectElement', 'pageBreak'
         for t in types:
             if t in element:
                 return getattr(self, t)(element[t])
+        else:
+            raise UnhandledElementError(str(element))
+
+    def pageBreak(self, v):
+        # MUAHAHAHAHA
+        return ''
 
     def inlineObjectElement(self, ioe):
         oid = ioe['inlineObjectId']
@@ -180,7 +191,7 @@ class DocOrg:
                     uri = obj['contentUri']
                     return f'[[{uri}]]'
                 else:
-                    return f'[[{oid}][Missing embedded object!]]'
+                    return f'>>>Missing embedded object {oid}!<<<'
 
         else:
             raise TypeError(f'Unknown type in {list(eobj.keys())}')
@@ -200,6 +211,7 @@ class DocOrg:
         out = ''  # FIXME reverse whitespace ...
 
         content = tr['content']
+        content = self.textRun_content_normalize(content, lt)
         while content.endswith('\n'):
             stack.append('line-terminator')
             content = content[:-1]
@@ -224,6 +236,11 @@ class DocOrg:
                 out += mapping[style]
 
         return out
+
+    @staticmethod
+    def textRun_content_normalize(content, lt):
+        vertical_tab = '\x0b'  # apparently C-<enter> in docs produces this madness
+        return content.replace(vertical_tab, lt)
 
     def sectionBreak(self, value):
         return '\n'
