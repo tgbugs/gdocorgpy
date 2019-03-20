@@ -72,6 +72,14 @@ class DocOrg:
         self.in_table = False
         self.stack = []
         elements = self.j['body']['content']
+        org += self.content(self.j['body']['content'])
+        self.j = None
+        self.start_heading = ''
+        return org
+
+    def content(self, content):
+        out = ''
+        elements = content
         nexts = elements[1:] + [None]
         for element, nxt in zip(elements, nexts):
             e = self.element(element)
@@ -80,11 +88,9 @@ class DocOrg:
                 if 'paragraph' in nxt and nxt['paragraph']['paragraphStyle']['namedStyleType'] != 'NORMAL_TEXT':
                     e = e.rstrip(' ')  # we have a header!
 
-            org += e
+            out += e
 
-        self.j = None
-        self.start_heading = ''
-        return org
+        return out
 
     def element(self, element):
         # start index and end index are probably useful ...
@@ -168,7 +174,7 @@ class DocOrg:
         return out
 
     def paragraph_element(self, element):
-        types = 'textRun', 'inlineObjectElement', 'pageBreak'
+        types = 'textRun', 'inlineObjectElement', 'pageBreak', 'footnoteReference'
         for t in types:
             if t in element:
                 return getattr(self, t)(element[t])
@@ -242,13 +248,22 @@ class DocOrg:
         vertical_tab = '\x0b'  # apparently C-<enter> in docs produces this madness
         return content.replace(vertical_tab, lt)
 
+    def footnoteReference(self, value):
+        footnoteId = value['footnoteId']
+        fobj = self.j['footnotes'][footnoteId]
+        out = '[fn::'
+        fn = self.content(fobj['content'])
+        out += fn.strip()  # FIXME pass a skip leading whitespace argument?
+        out += ']'
+        return out
+       
     def sectionBreak(self, value):
         return '\n'
 
     def tableOfContents(self, value):
         return ''
 
-           
+
 class Docs:
     def __init__(self, store_file, converter=DocOrg):
         self.service = get_docs_service(store_file)
