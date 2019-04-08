@@ -248,12 +248,12 @@ class DocOrg:
 
             out += content
 
-            while stack:
-                style = stack.pop(-1)
-                if style == 'link':
-                    out += ']]'
-                else:
-                    out += mapping[style]
+        while stack:
+            style = stack.pop(-1)
+            if style == 'link':
+                out += ']]'
+            else:
+                out += mapping[style]
 
         return out
 
