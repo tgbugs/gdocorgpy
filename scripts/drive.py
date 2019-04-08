@@ -182,8 +182,7 @@ class DocOrg:
             raise UnhandledElementError(str(element))
 
     def pageBreak(self, v):
-        # MUAHAHAHAHA
-        return ''
+        return '\n'
 
     def inlineObjectElement(self, ioe):
         oid = ioe['inlineObjectId']
@@ -212,34 +211,49 @@ class DocOrg:
             'italic': '/',
             'strikethrough': '+',  # TODO haven't seen this yet
             'line-terminator': lt,
+            'trailing-whitespace': ' ',
         }
         stack = []
         out = ''  # FIXME reverse whitespace ...
 
         content = tr['content']
         content = self.textRun_content_normalize(content, lt)
+
+        # don't style trailing whitespace
+        # it is too hard to fix this stuff in the wysiwyg so just fix it here
+        while content.endswith(' '):
+            stack.append('trailing-whitespace')
+            content = content[:-1]
+
         while content.endswith('\n'):
             stack.append('line-terminator')
             content = content[:-1]
 
-        for style in styles:
-            if style in ts:
-                if style == 'underline' and 'link' in ts:
-                    style = 'link'
-                    href = ts['link']['url']
-                    mapping['link'] = f'[[{href}]['
+        # don't style leading whitespace
+        # it is too hard to fix this stuff in the wysiwyg so just fix it here
+        while content.startswith(' '):
+            out += ' '
+            content = content[1:]
 
-                out += mapping[style]
-                stack.append(style)
+        if content:  # only style if there is content
+            for style in styles:
+                if style in ts:
+                    if style == 'underline' and 'link' in ts:
+                        style = 'link'
+                        href = ts['link']['url']
+                        mapping['link'] = f'[[{href}]['
 
-        out += content
+                    out += mapping[style]
+                    stack.append(style)
 
-        while stack:
-            style = stack.pop(-1)
-            if style == 'link':
-                out += ']]'
-            else:
-                out += mapping[style]
+            out += content
+
+            while stack:
+                style = stack.pop(-1)
+                if style == 'link':
+                    out += ']]'
+                else:
+                    out += mapping[style]
 
         return out
 
