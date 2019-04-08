@@ -165,9 +165,9 @@ class DocOrg:
         else:
             bhead = ''
 
-        for element in paragraph['elements']:
+        for i, element in enumerate(paragraph['elements']):
             e = self.paragraph_element(element)
-            if e.strip():  # issue where bhead appended when last element is empty!?
+            if not i and e.strip():  # issue where bhead appended when last element is empty!?
                 e = bhead + e
             out += e
 
