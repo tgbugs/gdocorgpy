@@ -1,0 +1,24 @@
+* gdocorg
+  convert google docs to org-mode
+* Functions
+  #+NAME: getdoc
+  #+HEADER: :results value drawer :exports none :cache yes
+  #+BEGIN_SRC python :var docname="style-test", start_heading=""
+    from pyontutils.config import devconfig
+    from misc.scripts.drive import Docs
+    docs = Docs(devconfig.secrets('google', 'api', 'drive', 'store-file'))
+    out = docs.get_doc_org(docname, start_heading)
+    return out
+  #+END_SRC
+* Example
+**** paper                                                         :workflow:
+     Starting on the target (next) header with it open.
+     =<tab>ddk=
+     =C-c C-c=
+     =yes<enter>=
+     =j4dd=
+     =C-c C-n=
+     =kdkk=
+     =C-v C-c C-p=
+     =11j4ld<tab>=j1<tab>j=
+     #+CALL: getdoc("example-paper", "*")
